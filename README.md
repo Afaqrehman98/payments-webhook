@@ -55,7 +55,7 @@ A robust, production-ready webhook service for processing payment events with as
 
 ### 1. Clone and install
 ```bash
-git clone <your-repo-url>
+git clone git remote add origin https://github.com/Afaqrehman98/payments-webhook.git
 cd payments-webhook
 npm install
 ```
