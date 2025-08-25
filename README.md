@@ -19,8 +19,8 @@ A robust, production-ready webhook service for processing payment events with as
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Webhook      │───▶│   Validation    │───▶│   Idempotency   │
-│   Request      │    │   Middleware    │    │     Check       │
+│   Webhook       │───▶│   Validation    │───▶│   Idempotency   │
+│   Request       │    │   Middleware    │    │     Check       │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                                                        │
                                                        ▼
@@ -34,9 +34,9 @@ A robust, production-ready webhook service for processing payment events with as
                                     │                 │                 │
                                     ▼                 ▼                 ▼
                            ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-                           │  200 OK    │  │  202 Acc.  │  │  500 Error │
-                           │  Already   │  │  Queued    │  │  Server    │
-                           │ Processed  │  │             │  │  Error     │
+                           │  200 OK     │  │  202 Acc.   │  │  500 Error  │
+                           │  Already    │  │  Queued     │  │  Server     │
+                           │ Processed   │  │             │  │  Error      │
                            └─────────────┘  └─────────────┘  └─────────────┘
                                                        │
                                                        ▼
@@ -47,20 +47,20 @@ A robust, production-ready webhook service for processing payment events with as
                                                        │
                                                        ▼
                                               ┌─────────────────┐
-                                              │   Payment      │
-                                              │   Service      │
+                                              │   Payment       │
+                                              │   Service       │
                                               └─────────────────┘
                                                        │
                                                        ▼
                                               ┌─────────────────┐
-                                              │   Repository   │
-                                              │   (Data Layer) │
+                                              │   Repository    │
+                                              │   (Data Layer)  │
                                               └─────────────────┘
                                                        │
                                                        ▼
                                               ┌─────────────────┐
-                                              │   Database     │
-                                              │   Transaction  │
+                                              │   Database      │
+                                              │   Transaction   │
                                               └─────────────────┘
 ```
 
