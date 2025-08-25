@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { paymentSchema } from '../types/paymentTypes.ts';
 import { validateBody } from '../middleware/validation.ts';
 import { paymentQueue } from '../worker/paymentActor.ts';
-import { PaymentRepository } from '../repositories/paymentRepository.ts';
+import { PaymentRepository } from '../repositories/PaymentRepository.ts';
 import { BadRequestError, NotFoundError } from '../errors/customErrors.ts';
 import { withTx } from '../utils/tx.ts';
 

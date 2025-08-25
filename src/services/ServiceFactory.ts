@@ -1,4 +1,4 @@
-import { PaymentService } from './paymentService.ts';
+import { PaymentService } from './PaymentService.ts';
 
 // Service factory for centralized service management
 export class ServiceFactory {

@@ -2,7 +2,7 @@ import { withTx } from '../utils/tx.ts';
 import { PaymentPayload } from '../types/paymentTypes.ts';
 import { NotFoundError, BadRequestError } from '../errors/customErrors.ts';
 import { PaymentType, InvoiceStatus } from '../constants/payment.ts';
-import { PaymentRepository } from '../repositories/paymentRepository.ts';
+import { PaymentRepository } from '../repositories/PaymentRepository.ts';
 
 export class PaymentService {
     constructor() {}

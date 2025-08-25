@@ -219,8 +219,8 @@ src/
 ├── repositories/      # Data access layer (Repository Pattern)
 ├── routes/            # API route definitions
 ├── services/          # Business logic layer (Service Layer)
-│   ├── index.ts       # Service factory for dependency injection
-│   └── paymentService.ts # Payment business logic
+│   ├── ServiceFactory.ts       # Service factory for dependency injection
+│   └── PaymentService.ts # Payment business logic
 ├── types/             # TypeScript type definitions
 ├── utils/             # Utility functions (transactions)
 ├── worker/            # Async event processing (Actor Pattern)

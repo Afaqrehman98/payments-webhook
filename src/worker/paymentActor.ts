@@ -1,5 +1,5 @@
 import { PaymentPayload } from '../types/paymentTypes.ts';
-import { ServiceFactory } from '../services/index.ts';
+import { ServiceFactory } from '../services/ServiceFactory.ts';
 import { EventQueue } from '../queue/eventQueue.ts';
 
 export const paymentQueue = new EventQueue<PaymentPayload>(async (payload) => {
