@@ -65,20 +65,21 @@ A robust, production-ready webhook service for processing payment events with as
 ```
 
 **Key Flow:**
-1. **Request received** → Validated → **Idempotency check**
-2. **If duplicate**: Immediate **200 OK** response
-3. **If new**: **202 Accepted** → Queued for background processing
+1. **Request received** → Validated → **🆕 Duplicate check via service layer**
+2. **🆕 If duplicate**: Immediate **409 Conflict** response with clear error message
+3. **🆕 If new**: **202 Accepted** → Queued for background processing
 4. **Background processing**: Payment Service → Repository → Database
-5. **Triple protection**: Route + Queue + Database level idempotency
+5. **🆕 Triple protection**: Service-level duplicate check + Database constraint + Repository validation
 
 ## 🎯 Design Patterns
 
-- **Repository Pattern**: Clean data access abstraction
-- **Service Layer**: Business logic encapsulation
+- **Repository Pattern**: Clean data access abstraction with raw SQL queries
+- **Service Layer**: Business logic encapsulation and transaction management
 - **Factory Pattern**: Centralized service management
 - **Dependency Injection**: Loose coupling between components
 - **Actor Pattern**: Asynchronous event processing
 - **Transaction Wrapper**: ACID compliance utilities
+- **🆕 Clean Architecture**: Proper separation of concerns between layers
 
 ## 📋 Requirements
 
@@ -130,7 +131,7 @@ npm start
 
 ### POST /webhooks/payments
 
-Processes payment events asynchronously.
+Processes payment events asynchronously with **idempotent behavior**.
 
 **Request Body:**
 ```json
@@ -142,10 +143,39 @@ Processes payment events asynchronously.
 }
 ```
 
-**Response:**
-- `202 Accepted`: Payment queued for processing
+**🆕 Response Codes:**
+- `202 Accepted`: Payment queued for processing (new event)
+- `409 Conflict`: Payment with this event_id already processed (duplicate)
 - `400 Bad Request`: Invalid input data
+- `404 Not Found`: Invoice not found
 - `500 Internal Server Error`: Server error
+
+**🆕 Example Responses:**
+
+**Success (New Payment):**
+```json
+{
+  "message": "Payment queued for processing",
+  "event_id": "evt_123456789"
+}
+```
+
+**Duplicate Payment:**
+```json
+{
+  "error": "Payment with event_id evt_123456789 already processed",
+  "type": "duplicate_event",
+  "event_id": "evt_123456789"
+}
+```
+
+**Invoice Not Found:**
+```json
+{
+  "error": "Invoice 550e8400-e29b-41d4-a716-446655440000 not found",
+  "type": "not_found"
+}
+```
 
 ## 🗄️ Database Schema
 
@@ -187,11 +217,14 @@ CREATE TABLE payment_events_queue (
 
 1. **Webhook Reception**: Payment event received via POST request
 2. **Validation**: Payload validated against Zod schema
-3. **Queueing**: Event enqueued for asynchronous processing
-4. **Response**: Immediate `202 Accepted` response to webhook sender
-5. **Processing**: Background actor processes the payment event
-6. **Database Update**: Payment recorded and invoice status updated
-7. **Idempotency**: Duplicate events automatically ignored
+3. **🆕 Duplicate Check**: Service layer checks for existing event_id
+4. **🆕 Response**: 
+   - `409 Conflict` if duplicate detected
+   - `202 Accepted` if new event
+5. **Queueing**: Event enqueued for asynchronous processing (if new)
+6. **Background Processing**: Actor processes the payment event
+7. **Database Update**: Payment recorded and invoice status updated
+8. **🆕 Idempotency**: Duplicate events rejected at multiple levels
 
 ## 🧪 Testing
 
@@ -208,6 +241,24 @@ curl -X POST http://localhost:3000/webhooks/payments \
   }'
 ```
 
+### 🆕 Testing Scenarios
+
+**1. First Payment (Should Succeed):**
+- **Request**: New event_id
+- **Expected**: `202 Accepted` with success message
+
+**2. Duplicate Payment (Should Fail):**
+- **Request**: Same event_id
+- **Expected**: `409 Conflict` with duplicate error
+
+**3. Different Event ID (Should Succeed):**
+- **Request**: Different event_id, same invoice
+- **Expected**: `202 Accepted` with success message
+
+**4. Invalid Invoice (Should Fail):**
+- **Request**: Non-existent invoice_id
+- **Expected**: `404 Not Found` with error message
+
 ## 📁 Project Structure
 
 ```
@@ -216,8 +267,8 @@ src/
 ├── db/                # Database connection and migrations
 ├── errors/            # Custom error classes
 ├── middleware/        # Request validation middleware
-├── repositories/      # Data access layer (Repository Pattern)
-├── routes/            # API route definitions
+├── repositories/      # Data access layer with raw SQL queries
+├── routes/            # API route definitions (HTTP concerns only)
 ├── services/          # Business logic layer (Service Layer)
 │   ├── ServiceFactory.ts       # Service factory for dependency injection
 │   └── PaymentService.ts # Payment business logic
@@ -240,10 +291,11 @@ src/
 
 ## 🚨 Error Handling
 
-The service handles various error scenarios:
-- **Validation Errors**: Invalid input data (400)
-- **Not Found**: Invoice doesn't exist (404)
-- **Server Errors**: Internal processing errors (500)
+The service handles various error scenarios with **proper HTTP status codes**:
+- **🆕 409 Conflict**: Duplicate event_id detected
+- **400 Bad Request**: Invalid input data
+- **404 Not Found**: Invoice doesn't exist
+- **500 Internal Server Error**: Internal processing errors
 
 ## 📈 Scalability Features
 
@@ -253,16 +305,36 @@ The service handles various error scenarios:
 - **Transaction Safety**: ACID compliance for data integrity
 - **Service Factory**: Centralized service management
 - **Dependency Injection**: Loose coupling for better testability
+- **🆕 Layer Separation**: Clean boundaries between HTTP, business logic, and data access
 
 ## 🏗️ Code Quality Features
 
 - **Type Safety**: Full TypeScript with strict mode
-- **Clean Architecture**: Separation of concerns
+- **🆕 Clean Architecture**: Proper layer separation (Route → Service → Repository)
 - **OOP Principles**: Consistent object-oriented design
+- **🆕 Proper HTTP Status Codes**: RESTful API responses
+- **🆕 Idempotent Webhooks**: Same request = same response
 - **Error Handling**: Custom error classes and proper HTTP status codes
 - **Validation**: Zod schema validation with middleware
-- **Transactions**: Database transaction safety
-- **Idempotency**: Duplicate event prevention
+- **Transactions**: Database transaction safety managed in service layer
+- **🆕 Raw SQL Queries**: Direct database access for performance and control
+- **🆕 Single Responsibility**: Each layer has one clear purpose
+
+## 🏗️ Improved Architecture
+
+**🆕 Layer Responsibilities:**
+
+- **Route Layer**: HTTP request/response, validation, status codes
+- **Service Layer**: Business logic, transaction management, repository coordination
+- **Repository Layer**: Raw data access, SQL queries, database operations
+
+**🆕 Benefits of New Architecture:**
+
+- **Single Repository Instance**: No duplicate object creation
+- **Clean Separation**: Route focuses only on HTTP concerns
+- **Testability**: Service methods can be easily unit tested
+- **Maintainability**: Business logic centralized in service layer
+- **Reusability**: Service methods can be used by other parts of the app
 
 ## 🤝 Contributing
 

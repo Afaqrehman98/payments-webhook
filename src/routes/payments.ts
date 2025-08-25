@@ -2,9 +2,8 @@ import { FastifyInstance } from 'fastify';
 import { paymentSchema } from '../types/paymentTypes.ts';
 import { validateBody } from '../middleware/validation.ts';
 import { paymentQueue } from '../worker/paymentActor.ts';
-import { PaymentRepository } from '../repositories/PaymentRepository.ts';
 import { BadRequestError, NotFoundError } from '../errors/customErrors.ts';
-import { withTx } from '../utils/tx.ts';
+import { PaymentService } from '../services/PaymentService.ts';
 
 export default async function paymentsRoute(fastify: FastifyInstance) {
     fastify.post('/webhooks/payments', {
@@ -13,12 +12,21 @@ export default async function paymentsRoute(fastify: FastifyInstance) {
         try {
             const payload = request.validatedBody!;
 
+            const paymentService = new PaymentService();
+
+            // Check for duplicate payment event
+            const existingPayment = await paymentService.checkPaymentExists(payload.event_id);
+
+            if (existingPayment) {
+                return reply.status(409).send({
+                    error: `Payment with event_id ${payload.event_id} already processed`,
+                    type: 'duplicate_event',
+                    event_id: payload.event_id
+                });
+            }
+
             // Pre-validate invoice exists (as required by test for 4xx responses)
-            const invoiceExists = await withTx(async client => {
-                const repo = new PaymentRepository(client);
-                const invoice = await repo.getInvoiceById(payload.invoice_id);
-                return invoice !== null;
-            });
+            const invoiceExists = await paymentService.checkInvoiceExists(payload.invoice_id);
 
             if (!invoiceExists) {
                 return reply.status(404).send({

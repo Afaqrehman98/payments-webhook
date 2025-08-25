@@ -7,6 +7,21 @@ import { PaymentRepository } from '../repositories/PaymentRepository.ts';
 export class PaymentService {
     constructor() {}
 
+    async checkPaymentExists(eventId: string): Promise<boolean> {
+        return await withTx(async (client) => {
+            const repo = new PaymentRepository(client);
+            return await repo.paymentExists(eventId);
+        });
+    }
+
+    async checkInvoiceExists(invoiceId: string): Promise<boolean> {
+        return await withTx(async (client) => {
+            const repo = new PaymentRepository(client);
+            const invoice = await repo.getInvoiceById(invoiceId);
+            return invoice !== null;
+        });
+    }
+
     async handlePayment(payload: PaymentPayload) {
         const { event_id, invoice_id, amount_cents } = payload;
 
@@ -40,5 +55,4 @@ export class PaymentService {
             return { status: 201, message: 'Payment processed' };
         });
     }
-
 }

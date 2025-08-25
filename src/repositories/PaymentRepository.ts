@@ -22,7 +22,7 @@ export class PaymentRepository {
             'SELECT id, total_cents, status FROM invoices WHERE id = $1 FOR UPDATE',
             [invoiceId]
         );
-        return res.rowCount === 0 ? null : (res.rows[0] as InvoiceRecord);
+        return (res.rowCount ?? 0) === 0 ? null : (res.rows[0] as InvoiceRecord);
     }
 
     async insertPayment(payment: PaymentRecord): Promise<PaymentRecord | null> {
@@ -33,7 +33,7 @@ export class PaymentRepository {
              RETURNING *`,
             [payment.event_id, payment.invoice_id, payment.amount_cents, payment.type]
         );
-        return res.rowCount === 0 ? null : (res.rows[0] as PaymentRecord);
+        return (res.rowCount ?? 0) === 0 ? null : (res.rows[0] as PaymentRecord);
     }
 
     async getTotalPaid(invoiceId: string): Promise<number> {
@@ -49,5 +49,13 @@ export class PaymentRepository {
             'UPDATE invoices SET status = $1, updated_at = NOW() WHERE id = $2',
             [status, invoiceId]
         );
+    }
+
+    async paymentExists(eventId: string): Promise<boolean> {
+        const res = await this.client.query(
+            'SELECT 1 FROM payments WHERE event_id = $1',
+            [eventId]
+        );
+        return (res.rowCount ?? 0) > 0;
     }
 }
