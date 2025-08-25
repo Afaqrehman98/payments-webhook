@@ -13,7 +13,7 @@ export default async function paymentsRoute(fastify: FastifyInstance) {
         try {
             const payload = request.validatedBody!;
 
-            // Run a lightweight pre-check in a transaction just to validate invoice
+            // Pre-validate invoice exists (as required by test for 4xx responses)
             const invoiceExists = await withTx(async client => {
                 const repo = new PaymentRepository(client);
                 const invoice = await repo.getInvoiceById(payload.invoice_id);
@@ -21,14 +21,9 @@ export default async function paymentsRoute(fastify: FastifyInstance) {
             });
 
             if (!invoiceExists) {
-                throw new NotFoundError(`Invoice ${payload.invoice_id} not found`);
-            }
-
-            // Check if this event has already been processed
-            if (paymentQueue.isEventProcessed(payload.event_id)) {
-                return reply.status(200).send({
-                    message: 'Payment already processed',
-                    event_id: payload.event_id
+                return reply.status(404).send({
+                    error: `Invoice ${payload.invoice_id} not found`,
+                    type: 'not_found'
                 });
             }
 

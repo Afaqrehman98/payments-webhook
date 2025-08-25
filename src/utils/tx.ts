@@ -1,4 +1,4 @@
-import { pool } from '../db/index.ts';
+import { pool } from '../db/connection.ts';
 import { PoolClient } from 'pg';
 
 export async function withTx<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
